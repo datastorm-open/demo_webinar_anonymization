@@ -13,8 +13,8 @@ set.seed(100)
 ### bdd co-morbidités
 n = 1000
 
-liste_prenoms <- fread("C:/Users/macoutouly/Datastorm/Datastorm-Team - Documents/4-Projets/03-R&D/RD2020_ANONYMISATION/Publication, présentation, poster/Webinar 2020-09/docs/prenom.csv")[sum >= 500, ]
-liste_noms <- fread("C:/Users/macoutouly/Datastorm/Datastorm-Team - Documents/4-Projets/03-R&D/RD2020_ANONYMISATION/Publication, présentation, poster/Webinar 2020-09/docs/patronymes.csv")[count >= 100, ]
+liste_prenoms <- fread("bdd/prenom.csv")[sum >= 500, ]
+liste_noms <- fread("bdd/patronymes.csv")[count >= 100, ]
 gen_nom <- paste0(sample(unlist(mapply(rep, liste_prenoms$prenom, times = liste_prenoms$sum, USE.NAMES = F)), size = n, replace = T), " ", sample(unlist(mapply(rep, liste_noms$patronyme, times = liste_noms$count, USE.NAMES = F)), size = n, replace = T))
 
 gen_sexe <- sample(c("F", "H"), size = n, replace = T)

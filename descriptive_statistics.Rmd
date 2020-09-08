@@ -1,0 +1,64 @@
+---
+title: "Descriptive Statistic"
+author: "Thibaut Dubois - Martin Masson (DataStorm)"
+date: "08/09/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+require(data.table)
+require(rAmCharts)
+
+## Import data
+source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
+rm(list = setdiff(ls(), "data"))
+```
+
+```{r pole}
+dt = data.table(table(data$Département))
+labels = c("Direction commerciale" = "Commerce", 
+           "Direction des opérations" = "Opérationnel", 
+           "Direction financières & RH" = "Finance & RH", 
+           "Direction R&D" = "R&D")
+colnames(dt) = c("label", "value")
+dt$label = unname(labels[dt$label])
+amPie(dt, 
+      main=sprintf("Répartition des %s employés au sein des départements", 
+                   nrow(data)))
+```
+
+
+```{r job}
+dt = data.table(table(data$Statut))
+colnames(dt) = c("label", "value")
+amPie(dt, 
+      main=sprintf("Répartition des %s employés suivant le statut", 
+                   nrow(data)))
+```
+
+```{r time}
+df = data.frame(table(cut(data$`Volume horaire`, 10)))
+amBarplot("Var1", "Freq", df, horiz = T,
+          xlab="Volume horaire réel", 
+          ylab="Fréquence", 
+          show_values = T,
+          main="Répartition du volume horaire moyen effectué")
+```
+
+
+```{r move}
+rAmCharts::amHist(data$`Freq. déplacements`, horiz = T,
+          xlab="Fréquence de déplacement (Jour/An)", 
+          ylab="Fréquence", 
+          main="Répartition de la fréquence de déplacement")
+```
+
+
+```{r path}
+dt = as.data.table(data[,12:17])=="T"
+counts = apply(dt, 1, sum)
+amBarplot("counts", "Freq", data.frame(table(counts)),
+          main="Répartition du nombres de comorbidité parmi les employés",
+          xlab="Nombre de comorbidités",
+          ylab="Fréquence", show_values = T)
+```
