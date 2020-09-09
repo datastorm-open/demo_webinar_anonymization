@@ -16,12 +16,14 @@ rm(list = setdiff(ls(), "data"))
 
 ```{r pole}
 dt = data.table(table(data$Département))
+colnames(dt) = c("label", "value")
+
 labels = c("Direction commerciale" = "Commerce", 
            "Direction des opérations" = "Opérationnel", 
            "Direction financières & RH" = "Finance & RH", 
            "Direction R&D" = "R&D")
-colnames(dt) = c("label", "value")
 dt$label = unname(labels[dt$label])
+
 amPie(dt, 
       main=sprintf("Répartition des %s employés au sein des départements", 
                    nrow(data)))
@@ -31,34 +33,46 @@ amPie(dt,
 ```{r job}
 dt = data.table(table(data$Statut))
 colnames(dt) = c("label", "value")
+
 amPie(dt, 
-      main=sprintf("Répartition des %s employés suivant le statut", 
+      main=sprintf("Répartition des %s employés suivant leur statut", 
                    nrow(data)))
 ```
 
 ```{r time}
-df = data.frame(table(cut(data$`Volume horaire`, 10)))
-amBarplot("Var1", "Freq", df, horiz = T,
-          xlab="Volume horaire réel", 
-          ylab="Fréquence", 
-          show_values = T,
-          main="Répartition du volume horaire moyen effectué")
+df = data.frame(table(cut(data$`Volume horaire`, 
+                          seq(floor(min(data$`Volume horaire`)/5)*5, ceiling(max(data$`Volume horaire`)/5)*5, 5), 
+                          include.lowest = T, right = F)))
+
+plt <- amBarplot("Var1", "Freq", df, horiz = T,
+                 xlab="Volume horaire réel", 
+                 ylab="Fréquence", 
+                 show_values = T,
+                 main="Répartition du volume horaire moyen effectué")
+
+plt@dataProvider <- lapply(1:nrow(df), function(x) {plt@dataProvider[[x]]$color <- colorRampPalette(c("#edd7e8", "#5c0047"))(nrow(df))[x] ; plt@dataProvider[[x]]})
+plt
 ```
 
 
 ```{r move}
-rAmCharts::amHist(data$`Freq. déplacements`, horiz = T,
-          xlab="Fréquence de déplacement (Jour/An)", 
-          ylab="Fréquence", 
-          main="Répartition de la fréquence de déplacement")
+rAmCharts::amHist(data$`Freq. déplacements`, breaks = seq(0, ceiling(max(data$`Freq. déplacements`)/5)*5, 5),
+                  col = "#5c0047", border = "white",
+                  xlab="Fréquence de déplacement (Jour/An)", 
+                  ylab="Fréquence", 
+                  main="Répartition de la fréquence de déplacement")
 ```
 
 
 ```{r path}
-dt = as.data.table(data[,12:17])=="T"
-counts = apply(dt, 1, sum)
-amBarplot("counts", "Freq", data.frame(table(counts)),
-          main="Répartition du nombres de comorbidité parmi les employés",
-          xlab="Nombre de comorbidités",
-          ylab="Fréquence", show_values = T)
+dt = as.data.table(data[, c("Cancer", "Cirrhose", "Diabète", "Hypertension", "Immuno-déficience", "Pathologie respiratoire"), with = F]) == "T"
+dt_counts <- data.frame(table(apply(dt, 1, sum)))
+
+plt <- amBarplot("Var1", "Freq", dt_counts,
+                 main="Répartition du nombres de comorbidité parmi les employés",
+                 xlab="Nombre de comorbidités",
+                 ylab="Fréquence", show_values = T)
+
+plt@dataProvider <- lapply(1:nrow(dt_counts), function(x) {plt@dataProvider[[x]]$color <- colorRampPalette(c("#edd7e8", "#5c0047"))(nrow(dt_counts))[x] ; plt@dataProvider[[x]]})
+plt
 ```
