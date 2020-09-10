@@ -11,7 +11,7 @@ set.seed(100)
 
 
 ### bdd co-morbidités
-n = 1000
+n = 10000
 
 liste_prenoms <- fread("bdd/prenom.csv")[sum >= 500, ]
 liste_noms <- fread("bdd/patronymes.csv")[count >= 100, ]
@@ -51,31 +51,31 @@ gen_volume_horaire <- round(sapply(gen_statut, function(x) {rnorm(1, volume_stat
 
 eligibilite_departement <- list("Direction commerciale" = 5, "Direction financières & RH" = 8, "Direction des opérations" = 5, "Direction R&D" = 10)
 eligibilite_status <- list("Cadre" = 8, "Directeur" = 5, "Stagiaire/alternant" = 4, "Technicien" = 2)
-gen_eligibilite_teletravail <- c("T", "F")[round(abs(unlist(mapply(function(x, y) {round((eligibilite_departement[[x]]/10 + eligibilite_status[[y]]/10 + runif(1, 0, 1))/3)}, gen_departement, gen_statut, USE.NAMES = F)))) + 1]
+gen_eligibilite_teletravail <- c(T, F)[round(abs(unlist(mapply(function(x, y) {round((eligibilite_departement[[x]]/10 + eligibilite_status[[y]]/10 + runif(1, 0, 1))/3)}, gen_departement, gen_statut, USE.NAMES = F)))) + 1]
 
-gen_pathologie_resp <- sapply(age, function(x) {if (x < 40) {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 49*10))} else {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 49*9/10))}}, USE.NAMES = F)
-gen_cancer <- mapply(function(x, y) {if (x) {sample(c("T", "F"), size = 1, replace = T, prob = c(2*y**2, 6*mean(age)**2))} else {sample(c("T", "F"), size = 1, replace = T, prob = c(2*y**2, 59*mean(age)**2))}}, USE.NAMES = F, gen_pathologie_resp, age)
-gen_cirrhose <- sapply(age, function(x) {if (x < 40) {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 330*10))} else {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 330*9/10))}}, USE.NAMES = F)
-gen_diabete <- sapply(imc, function(x) {sample(c("T", "F"), size = 1, prob = c(1+(x > 25)*(1 + x-25)**3, 19))}, USE.NAMES = F)
-gen_hypertension <- sapply(gen_diabete, function(x) {if (x) {sample(c("T", "F"), size = 1, replace = T, prob = c(2, 1))} else {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 20))}}, USE.NAMES = F)
-gen_immunodeficience <- sapply(gen_cancer, function(x) {if (x) {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 3))} else {sample(c("T", "F"), size = 1, replace = T, prob = c(1, 460))}}, USE.NAMES = F)
+gen_pathologie_resp <- sapply(age, function(x) {if (x < 40) {sample(c(T, F), size = 1, replace = T, prob = c(1, 49*10))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 49*9/10))}}, USE.NAMES = F)
+gen_cancer <- mapply(function(x, y) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(2*y**2, 6*mean(age)**2))} else {sample(c(T, F), size = 1, replace = T, prob = c(2*y**2, 59*mean(age)**2))}}, USE.NAMES = F, gen_pathologie_resp, age)
+gen_cirrhose <- sapply(age, function(x) {if (x < 40) {sample(c(T, F), size = 1, replace = T, prob = c(1, 330*10))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 330*9/10))}}, USE.NAMES = F)
+gen_diabete <- sapply(imc, function(x) {sample(c(T, F), size = 1, prob = c(1+(x > 25)*(1 + x-25)**3, 19))}, USE.NAMES = F)
+gen_hypertension <- sapply(gen_diabete, function(x) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(2, 1))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 20))}}, USE.NAMES = F)
+gen_immunodeficience <- sapply(gen_cancer, function(x) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(1, 3))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 460))}}, USE.NAMES = F)
 
 data <- data.table("Nom" = gen_nom,
                    "Sexe" = gen_sexe,
                    "Date de naissance" = gen_date_naissance,
                    "Taille" = gen_taille,
                    "Poids" = gen_poids,
-                   "Enfants à charge" = gen_enfants_charge,
+                   "Enfants a charge" = gen_enfants_charge,
                    "Département" = gen_departement,
                    "Statut" =  gen_statut,
-                   "Freq. déplacements" = gen_freq_deplacement,
+                   "Freq. deplacements" = gen_freq_deplacement,
                    "Volume horaire" = gen_volume_horaire,
-                   "Eligibilité télétavail" = gen_eligibilite_teletravail,
+                   "Eligibilite teletavail" = gen_eligibilite_teletravail,
                    "Cancer" = gen_cancer,
                    "Cirrhose" = gen_cirrhose,
-                   "Diabète" = gen_diabete,
+                   "Diabete" = gen_diabete,
                    "Hypertension" = gen_hypertension,
-                   "Immuno-déficience" = gen_immunodeficience,
+                   "Immuno deficience" = gen_immunodeficience,
                    "Pathologie respiratoire" = gen_pathologie_resp,
                    "freq. depl. cut" = gen_freq_deplacement_cut,
                    "poids cut" = round(gen_poids))
