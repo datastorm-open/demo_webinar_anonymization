@@ -94,7 +94,10 @@ plt
 
 
 ```{r diap_dep, echo=FALSE}
-cross_dia_dep = data[,round(mean(Diabete)*100,2),by=c("Département")]
-amBarplot("Département", "V1", data = cross_dia_dep, horiz = T, stack_type="regular", ylim=c(0,100), ylab="Part d'employés diabétiques", show_values = T, main="Pourcentage par départements d'employés diabétique")
+#cross_dia_dep = data[,round(mean(Diabete)*100,2),by=c("Département")]
+#amBarplot("Département", "V1", data = cross_dia_dep, horiz = T, stack_type="regular", ylim=c(0,100), ylab="Part d'employés diabétiques", show_values = T, main="Pourcentage par départements d'employés diabétique")
+
+cross_dia_dep = data[,sum(Diabete),by=c("Département")]
+amBarplot("Département", "V1", data = cross_dia_dep, horiz = T, ylab="Nombre d'employés diabétiques", show_values = T, main="Pourcentage par départements d'employés diabétique")
 ```
 
