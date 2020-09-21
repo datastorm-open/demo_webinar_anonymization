@@ -95,7 +95,7 @@ plt
 
 
 ```{r diap_dep, echo=FALSE}
-cross_dia_dep = data[, .(somme = sum(Diabete)), by = c("Departement")]
+cross_dia_dep = data[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
 amBarplot("Departement", "somme", 
           data = cross_dia_dep, 
           horiz = T, show_values = T, main = "Nombre d'employés diabétiques par département")
