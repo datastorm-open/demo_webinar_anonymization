@@ -26,7 +26,8 @@ rm(list = setdiff(ls(), "data"))
 ## Répartition du personnel dans l'entreprise
 
 ```{r pole, echo=FALSE}
-dt = data.table(table(data$Département))
+data[, Departement := factor(Departement, levels = unique(Departement))]
+dt = data.table(table(data$Departement))
 colnames(dt) = c("label", "value")
 
 labels = c("Direction commerciale" = "Commerce", 
@@ -94,10 +95,9 @@ plt
 
 
 ```{r diap_dep, echo=FALSE}
-#cross_dia_dep = data[,round(mean(Diabete)*100,2),by=c("Département")]
-#amBarplot("Département", "V1", data = cross_dia_dep, horiz = T, stack_type="regular", ylim=c(0,100), ylab="Part d'employés diabétiques", show_values = T, main="Pourcentage par départements d'employés diabétique")
-
-cross_dia_dep = data[,sum(Diabete),by=c("Département")]
-amBarplot("Département", "V1", data = cross_dia_dep, horiz = T, ylab="Nombre d'employés diabétiques", show_values = T, main="Pourcentage par départements d'employés diabétique")
+cross_dia_dep = data[, .(somme = sum(Diabete)), by = c("Departement")]
+amBarplot("Departement", "somme", 
+          data = cross_dia_dep, 
+          horiz = T, show_values = T, main = "Nombre d'employés diabétiques par département")
 ```
 
