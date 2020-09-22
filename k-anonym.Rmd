@@ -1,5 +1,5 @@
 ---
-  title: "Statistique descriptive"
+title: "Statistique descriptive"
 author: "Thibaut Dubois - Martin Masson (DataStorm)"
 date: "08/09/2020"
 output: 
@@ -25,7 +25,7 @@ source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
 rm(list = setdiff(ls(), "data"))
 
 ## Anonymize the dataset
-source("k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
+source("anonym/k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
 data_anonym <- k_anonymize_bdd(copy(data),
                                k = 10,
                                method = "mdav")
@@ -35,8 +35,10 @@ data_add[1, ] <- list("JULIE LABRE", "F", "13/11/2002", 169, 68, 0, "Direction R
 data_add[2, ] <- list("ALAIN IMBERT", "H", "07/09/1968", 161, 73, 2, "Direction des opérations", "Cadre", 12, 40, T, T, T, T, T, T, T, NA, NA)
 data_add[3, ] <- list("GEORGE DRENO", "H", "17/03/1975", 179, 99, 3, "Direction commerciale", "Technicien", 2, 40, T, F, T, T, T, F, F, NA, NA)
 data <- rbind(data, data_add)
-fwrite(data[which(data_anonym$group %in% data_anonym[10001:10003, ]$group)[order(data_anonym$group[data_anonym$group %in% data_anonym[10001:10003, ]$group])]], "C:/Users/macoutouly/Desktop/Downloads/data_group_q.csv")
-fwrite(data_anonym[10001:10003], "C:/Users/macoutouly/Desktop/Downloads/data_anonym_q.csv")
+fwrite(data[which(data_anonym$group %in% data_anonym[10001:10003, ]$group)[order(data_anonym$group[data_anonym$group %in% data_anonym[10001:10003, ]$group])]],
+       paste0(Sys.getenv("HOME"), "\\data_group_q.csv"))
+fwrite(data_anonym[10001:10003], 
+       paste0(Sys.getenv("HOME"), "\\data_anonym_q.csv"))
 ```
 
 ```{r}
