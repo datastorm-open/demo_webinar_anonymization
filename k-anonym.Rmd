@@ -1,16 +1,16 @@
 ---
-title: "Statistique descriptive"
-author: "Thibaut Dubois - Martin Masson (DataStorm)"
+title: "Comparaison avant-après anonymisation"
+author: 
+  - name : "Thibaut Dubois - Martin Masson"
+    url: https://github.com/datastorm-open/webinar_anonymization 
+    affiliation: DataStorm
+    affiliation_url: https://datastorm.fr
 date: "08/09/2020"
 output: 
   html_document :
-  toc: true
-toc_depth: 2
+    toc: true
+    toc_depth: 2
 ---
-
-Code source (génération BDD, statistiques descriptives, anonymisation) disponible à l'adresse suivante :
-
-- https://github.com/datastorm-open/webinar_anonymization 
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(warning = FALSE)
@@ -20,28 +20,45 @@ require(sdcMicro)
 require(rAmCharts)
 require(manipulateWidget)
 
-## Create the dataset + add questionnaire replies
+## Create the dataset 
+source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
+rm(list = setdiff(ls(), "data"))
+```
+
+
+```{r data, include=FALSE, echo=FALSE}
+## Create the dataset
 source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
 rm(list = setdiff(ls(), "data"))
 
-## Anonymize the dataset
-source("anonym/k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
-data_anonym <- k_anonymize_bdd(copy(data),
-                               k = 10,
-                               method = "mdav")
-
+## Force add individuals followed during webinar
 data_add <- data[1:3, ]
 data_add[1, ] <- list("JULIE LABRE", "F", "13/11/2002", 169, 68, 0, "Direction R&D", "Stagiaire/alternant", 0, 35, F, F, F, F, F, F, F, NA, NA)
 data_add[2, ] <- list("ALAIN IMBERT", "H", "07/09/1968", 161, 73, 2, "Direction des opérations", "Cadre", 12, 40, T, T, T, T, T, T, T, NA, NA)
 data_add[3, ] <- list("GEORGE DRENO", "H", "17/03/1975", 179, 99, 3, "Direction commerciale", "Technicien", 2, 40, T, F, T, T, T, F, F, NA, NA)
 data <- rbind(data, data_add)
+
+## Anonymize the dataset
+## Algorith used : M-DAV 
+## See https://www.researchgate.net/publication/228998807_V-MDAV_Variable_group_size_multivariate_microaggregation
+source("anonym/k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
+data_anonym <- k_anonymize_bdd(copy(data),
+                               k = 10,
+                               method = "mdav")
+
+## Saved table at HOME/Documents
 fwrite(data[which(data_anonym$group %in% data_anonym[10001:10003, ]$group)[order(data_anonym$group[data_anonym$group %in% data_anonym[10001:10003, ]$group])]],
        paste0(Sys.getenv("HOME"), "\\data_group_q.csv"))
 fwrite(data_anonym[10001:10003], 
        paste0(Sys.getenv("HOME"), "\\data_anonym_q.csv"))
 ```
 
-```{r}
+
+# Distribution des employés suivants le département et le statut
+
+## Département de l'entreprise
+
+```{r, echo=FALSE}
 # Display variable "Departement"
 labels = c("Direction commerciale" = "Commerce",
            "Direction des opérations" = "Opérationnel",
@@ -63,7 +80,9 @@ pie_anonym <- plot(amPie(dt,
 combineWidgets(pie_original, pie_anonym)
 ```
 
-```{r}
+## Statut de l'employé
+
+```{r, echo=FALSE}
 # Display variable "Statut"
 dt = data.table(table(data$Statut))
 colnames(dt) = c("label", "value")
@@ -76,7 +95,11 @@ pie_anonym <- plot(amPie(dt,
 combineWidgets(list = list(pie_original, pie_anonym))
 ```
 
-```{r}
+# Impact de la k-Anonymisation sur deux quasi-identifiants quantitatifs
+
+## Volume moyen horaire
+
+```{r, echo=FALSE}
 # Display variable "Volume horaire"
 df = data.frame(table(cut(data$`Volume horaire`,
                           seq(floor(min(data$`Volume horaire`)/5)*5, ceiling(max(data$`Volume horaire`)/5)*5, 5),
@@ -95,7 +118,9 @@ plt_anonym@dataProvider <- lapply(1:nrow(df), function(x) {plt_anonym@dataProvid
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```
 
-```{r}
+## Fréquence de déplacement
+
+```{r, echo=FALSE}
 # Display variable "Freq. deplacement"
 plt_original <- rAmCharts::amHist(data$`Freq. deplacements`, breaks = seq(0, ceiling(max(data$`Freq. deplacements`)/5)*5, 5),
                                   col = "#5c0047", border = "white",
@@ -111,7 +136,9 @@ plt_anonym <- rAmCharts::amHist(data_anonym$`Freq. deplacements`, breaks = seq(0
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```
 
-```{r}
+# Impact de la k-Anonymisation sur notre KPI témoin
+
+```{r, echo=FALSE}
 # Display number of diabetes by Departement
 cross_dia_dep = data[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
 plt_original <- amBarplot("Departement", "somme", 
