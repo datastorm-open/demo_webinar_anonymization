@@ -14,8 +14,10 @@
 #' @import data.table sdcMicro rAmCharts manipulateWidget
 k_anonymize_bdd <- function(data, 
                             k = 10,
-                            method = "mdav") {
+                            method = "mdav",
+                            sensitive = c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire")) {
   
+  # remove useless columns
   data[, c("Nom", "freq. depl. cut", "poids cut") := NULL]
   
   # recode 'Date de naissance' as an age for anonymization
@@ -36,15 +38,10 @@ k_anonymize_bdd <- function(data,
     }
     data
   }
-  data_bin <- to_dummy(data[, -c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire")], 
+  data_bin <- to_dummy(data[, -sensitive, with=F], 
                        cols = names(which(sapply(data, function(x) is.character(x) || is.logical(x)))))
   # center + scale
   data_bin <- data_bin[, (names(data_bin)) := lapply(.SD, function(x) (x-mean(x))/sd(x))]
-  
-  
-  # choose method (to create clusters) and k (number of observation per cluster)
-  method <- "mdav"
-  k = 10
   
   # anonymize the binarized data using sdcMicro 
   data_bin_anonym <- sdcMicro::microaggregation(obj = as.data.frame(data_bin),
@@ -59,20 +56,19 @@ k_anonymize_bdd <- function(data,
   # anonymize idv in each group :
   # _numeric variables : use mean
   # _character variables : use mode
-  cols_num <- names(which(sapply(data[, -c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire")], is.numeric)))
+  cols_num <- names(which(sapply(data[, -sensitive, with=F], is.numeric)))
   data_anonym[, (cols_num) := lapply(.SD, as.numeric), .SDcols = cols_num]
   data_anonym[, (cols_num) := lapply(.SD, function(x) mean(x)), .SDcols = cols_num, by = "group"]
-  cols_char <- names(which(sapply(data[, -c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire")], is.character)))
+  cols_char <- names(which(sapply(data[, -sensitive, with=F], is.character)))
   data_anonym[, (cols_char) := lapply(.SD, as.character), .SDcols = cols_char]
   data_anonym[, (cols_char) := lapply(.SD, function(x) names(which.max(table(x)))), .SDcols = cols_char, by = "group"]
   data_anonym[, (cols_char) := lapply(.SD, as.factor), .SDcols = cols_char]
-  # data_anonym[, "group" := NULL]
+  # [DEV] data_anonym[, "group" := NULL]
   
   # recode back Date de naissance
   data_anonym[, `Date de naissance` := as.Date(data_anonym$`Date de naissance`, origin = lubridate::origin)]
   # add back comorbidities
-  data_anonym[, (c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire")) := 
-                data[, c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire"), with = F]]
+  data_anonym[, (sensitive) := data[, sensitive, with = F]]
   
   return(data_anonym)
 }
