@@ -113,13 +113,13 @@ combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 # Display number of diabetes by Departement
 cross_dia_dep = data[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
 plt_original <- amBarplot("Departement", "somme", 
-          data = cross_dia_dep, 
-          horiz = T, show_values = T, main = "Pourcentage d'employés diabétiques par département avant anonymisation")
+          data = cross_dia_dep, stack_type = "regular",
+          horiz = T, show_values = F, main = "Pourcentage d'individus ayant contracté un cancer par département, avant anonymisation")
 
 cross_dia_dep = data_anonym[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
 plt_anonym <- amBarplot("Departement", "somme", 
-                        data = cross_dia_dep, 
-                        horiz = T, show_values = T, main = "Pourcentage d'employés diabétiques par département après anonymisation")
+                        data = cross_dia_dep, stack_type = "regular",
+                        horiz = T, show_values = F, main = "Pourcentage d'individus ayant contracté un cancer par département, après k-anonymisation")
 
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```
