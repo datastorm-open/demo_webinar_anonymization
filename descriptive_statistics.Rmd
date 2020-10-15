@@ -1,6 +1,10 @@
 ---
 title: "Statistique descriptive"
-author: "Thibaut Dubois - Martin Masson (DataStorm)"
+author: 
+  - name : "Thibaut Dubois - Martin Masson"
+    url: https://github.com/datastorm-open/webinar_anonymization 
+    affiliation: DataStorm
+    affiliation_url: https://datastorm.fr
 date: "08/09/2020"
 output: 
   html_document :
@@ -8,9 +12,6 @@ output:
     toc_depth: 2
 ---
 
-Code source (génération BDD, statistiques descriptives, anonymisation) disponible à l'adresse suivante :
-
-- https://github.com/datastorm-open/webinar_anonymization 
 
 ```{r setup, include=FALSE, echo=FALSE}
 require(data.table)
