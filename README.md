@@ -4,12 +4,12 @@ Code and results presented during DataStorm's webinar about anonymization.
 
 ## Dataset
 
-- Generated randomly data about employees in a company
+- Generated data about employees in a company dataset
 - Directly identifying column (Firstname, Lastname)
-- Quasi-identifer (gender, birthdate, their place in the company, ...)
-- Sensitive data (comorbidities)
+- Quasi-identifer (gender, birthdate, activity, ...)
+- Sensitive data (medical data, commercial data)
 
-## Package used
+## Packages used
 
 - data.table
 - sdcMicro
@@ -19,4 +19,4 @@ Code and results presented during DataStorm's webinar about anonymization.
 ## More about DataStorm and anonymization
 
 - For french readers : [a white paper](https://www.datastorm.fr/livre-blanc-datastorm-deployer-une-procedure-danonymisation/)
-- For french listeners : a webinar ... coming soon
+- For french listeners : [a webinar](https://www.datastorm.fr/replay-comment-concilier-performance-business-et-reglementation-grace-a-lanonymisation-des-donnees/) 
