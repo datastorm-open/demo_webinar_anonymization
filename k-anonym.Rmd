@@ -34,7 +34,7 @@ sample_rate <- 0.5
 rows_sample <- c(1, sample(2:nrow(data), size = round(nrow(data)*sample_rate)))
 data_sample <- data[rows_sample, ]
 
-source("k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
+source("anonym/k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
 data_anonym <- k_anonymize_bdd(copy(data_sample),
                                k = 20,
                                method = "mdav")
