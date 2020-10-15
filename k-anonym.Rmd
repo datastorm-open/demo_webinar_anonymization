@@ -18,108 +18,135 @@ knitr::opts_chunk$set(warning = FALSE)
 require(data.table)
 require(sdcMicro)
 require(rAmCharts)
+require(pipeR)
 require(manipulateWidget)
 
 ## Create the dataset + add questionnaire replies
 source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
 rm(list = setdiff(ls(), "data"))
 
+## add demo idv
+data <- rbind(data.table("Nom" = c("JULIE LABRE", "ALAIN IMBERT"), "Sexe" = c("F", "H"), "Date de naissance" = c("09/10/1990", "07/11/1989"), "Taille" = c(155, 186), "Poids" = c(57, 66), "Total produits" = c(4, 1), "Pratique declaree" = c("Professionnelle", "Intensive"), "Activite principale" = c("Cycle", "Course"), "Freq. activites mensuelles" = c(31, 23), "Volume horaire mensuel" = c(76, 40), "Profil public" = c(FALSE, TRUE), "Risque tachycardie" = c(TRUE, TRUE), "Risque hypertension" = c(FALSE, TRUE), "Strava" = c(FALSE, FALSE), "Twitter" = c(FALSE, FALSE), "Facebook" = c(FALSE, FALSE), "Opt_in" = c(TRUE, TRUE), "freq. activites mensuelles cut" = c("0", "0")),
+              data)
+
 ## Anonymize the dataset
+sample_rate <- 0.5
+rows_sample <- c(1, sample(2:nrow(data), size = round(nrow(data)*sample_rate)))
+data_sample <- data[rows_sample, ]
+
 source("k_anonymize_bdd.R", local = FALSE, encoding = "utf-8")
-data_anonym <- k_anonymize_bdd(copy(data),
-                               k = 10,
+data_anonym <- k_anonymize_bdd(copy(data_sample),
+                               k = 20,
                                method = "mdav")
 
-data_add <- data[1:3, ]
-data_add[1, ] <- list("JULIE LABRE", "F", "13/11/2002", 169, 68, 0, "Direction R&D", "Stagiaire/alternant", 0, 35, F, F, F, F, F, F, F, NA, NA)
-data_add[2, ] <- list("ALAIN IMBERT", "H", "07/09/1968", 161, 73, 2, "Direction des opérations", "Cadre", 12, 40, T, T, T, T, T, T, T, NA, NA)
-data_add[3, ] <- list("GEORGE DRENO", "H", "17/03/1975", 179, 99, 3, "Direction commerciale", "Technicien", 2, 40, T, F, T, T, T, F, F, NA, NA)
-data <- rbind(data, data_add)
-fwrite(data[which(data_anonym$group %in% data_anonym[10001:10003, ]$group)[order(data_anonym$group[data_anonym$group %in% data_anonym[10001:10003, ]$group])]], "C:/Users/macoutouly/Desktop/Downloads/data_group_q.csv")
-fwrite(data_anonym[10001:10003], "C:/Users/macoutouly/Desktop/Downloads/data_anonym_q.csv")
+## Check Julie's group
+data[rows_sample[which(data_anonym$group == 1)], ]
 ```
 
 ```{r}
-# Display variable "Departement"
-labels = c("Direction commerciale" = "Commerce",
-           "Direction des opérations" = "Opérationnel",
-           "Direction financières & RH" = "Finance & RH",
-           "Direction R&D" = "R&D")
+## Study the impact of k over the degradation of the data
+require(rAmCharts)
 
-dt = data.table(table(data$Departement))
+res_k_pratique_declaree <- vector(length = 50)
+res_k_activite_principale <- vector(length = 50)
+res_k_sexe <- vector(length = 50)
+for (k in 1:50) {
+  data_anonym_test <- k_anonymize_bdd(copy(data_sample),
+                                      k = k,
+                                      method = "mdav")
+  res_k_pratique_declaree[k] <- round(sum(data_sample$`Pratique declaree` != data_anonym_test$`Pratique declaree`)/100, 2)
+  res_k_activite_principale[k] <- round(sum(data_sample$`Activite principale` != data_anonym_test$`Activite principale`)/100, 2)
+  res_k_sexe[k] <- round(sum(data_sample$Sexe != data_anonym_test$Sexe)/100, 2)
+}
+
+rAmCharts::amSerialChart(dataProvider = data.table(x = 1:50, y = res_k_pratique_declaree), categoryField = 'x', creditsPosition = "top-right", fontSize = 25) %>>%
+  rAmCharts::addTitle(text = "Taux de modification de la variable 'Pratique Déclarée' en fonction de k") %>>%
+  rAmCharts::setCategoryAxis(title = "k") %>>%
+  rAmCharts::addValueAxes(title = "Taux (%)") %>>% 
+    rAmCharts::setGraphs(list(
+        rAmCharts::amGraph(valueField = "y", type = "line", lineThickness = 2, lineColor = "purple")))
+```
+
+```{r}
+# Display variable "Pratique declaree"
+dt = data.table(table(data$`Pratique declaree`))
 colnames(dt) = c("label", "value")
-dt$label = unname(labels[dt$label])
 pie_original <- plot(amPie(dt,
-                           main = "Répartition des employés au sein des départements avant anonymisation"))
+                           main = "Répartition des utilisateurs par pratique déclarée avant anonymisation"))
 
-dt = data.table(table(data_anonym$Departement))
+dt = data.table(table(data_anonym$`Pratique declaree`))
 colnames(dt) = c("label", "value")
-dt$label = unname(labels[dt$label])
 pie_anonym <- plot(amPie(dt,
-                         main = "Répartition des employés au sein des départements après anonymisation"))
+                         main = "Répartition des utilisateurs par pratique déclarée après anonymisation"))
 
 combineWidgets(pie_original, pie_anonym)
 ```
 
 ```{r}
-# Display variable "Statut"
-dt = data.table(table(data$Statut))
+# Display variable "Activite principale"
+dt = data.table(table(data$`Activite principale`))
 colnames(dt) = c("label", "value")
 pie_original <- plot(amPie(dt,
-                           main = "Répartition des employés suivant leur statut avant anonymisation"))
-dt = data.table(table(data_anonym$Statut))
+                           main = "Répartition des utilisateurs par activité principale avant anonymisation"))
+dt = data.table(table(data_anonym$`Activite principale`))
 colnames(dt) = c("label", "value")
 pie_anonym <- plot(amPie(dt,
-                            main = "Répartition des employés suivant leur statut après anonymisation"))
+                            main = "Répartition des utilisateurs par activité principale après anonymisation"))
 combineWidgets(list = list(pie_original, pie_anonym))
 ```
 
 ```{r}
 # Display variable "Volume horaire"
-df = data.frame(table(cut(data$`Volume horaire`,
-                          seq(floor(min(data$`Volume horaire`)/5)*5, ceiling(max(data$`Volume horaire`)/5)*5, 5),
-                          include.lowest = T, right = F)))
+df = data.frame(round(table(cut(data$`Volume horaire mensuel`,
+                          seq(floor(min(data$`Volume horaire mensuel`)/5)*5, ceiling(max(data$`Volume horaire mensuel`)/5)*5, 5),
+                          include.lowest = T, right = F))/nrow(data)*100, 3))
 plt_original <- amBarplot("Var1", "Freq", df, horiz = T,
                           xlab="Volume horaire réel", ylab="Fréquence", show_values = T,
-                          main="Répartition du volume horaire moyen effectué avant anonymisation")
+                          main="Répartition du volume horaire mensuel réalisé avant anonymisation")
 plt_original@dataProvider <- lapply(1:nrow(df), function(x) {plt_original@dataProvider[[x]]$color <- colorRampPalette(c("#edd7e8", "#5c0047"))(nrow(df))[x] ; plt_original@dataProvider[[x]]})
-df = data.frame(table(cut(data_anonym$`Volume horaire`,
-                          seq(floor(min(data_anonym$`Volume horaire`)/5)*5, ceiling(max(data_anonym$`Volume horaire`)/5)*5, 5),
-                          include.lowest = T, right = F)))
+df = data.frame(round(table(cut(data_anonym$`Volume horaire mensuel`,
+                          seq(floor(min(data_anonym$`Volume horaire mensuel`)/5)*5, ceiling(max(data_anonym$`Volume horaire mensuel`)/5)*5, 5),
+                          include.lowest = T, right = F))/nrow(data_anonym)*100, 3))
 plt_anonym <- amBarplot("Var1", "Freq", df, horiz = T,
                         xlab="Volume horaire réel", ylab="Fréquence", show_values = T,
-                        main = "Répartition du volume horaire moyen effectué après anonymisation")
+                        main = "Répartition du volume horaire mensuel réalisé après anonymisation")
 plt_anonym@dataProvider <- lapply(1:nrow(df), function(x) {plt_anonym@dataProvider[[x]]$color <- colorRampPalette(c("#edd7e8", "#5c0047"))(nrow(df))[x] ; plt_anonym@dataProvider[[x]]})
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```
 
 ```{r}
 # Display variable "Freq. deplacement"
-plt_original <- rAmCharts::amHist(data$`Freq. deplacements`, breaks = seq(0, ceiling(max(data$`Freq. deplacements`)/5)*5, 5),
-                                  col = "#5c0047", border = "white",
+plt_original <- rAmCharts::amHist(data$`Freq. activites mensuelles`, breaks = seq(0, ceiling(max(data$`Freq. activites mensuelles`)/5)*5, 5),
+                                  col = "#5c0047", border = "white", freq = F,
                                   xlab = "Fréquence de déplacement (Jour/An)",
                                   ylab = "Fréquence",
-                                  main = "Répartition de la fréquence de déplacement avant anonymisation")
-plt_anonym <- rAmCharts::amHist(data_anonym$`Freq. deplacements`, breaks = seq(0, ceiling(max(data$`Freq. deplacements`)/5)*5, 5),
-                                col = "#5c0047", border = "white",
+                                  main = "Répartition de la fréquence mensuelle des activités avant anonymisation")
+plt_anonym <- rAmCharts::amHist(data_anonym$`Freq. activites mensuelles`, breaks = seq(0, ceiling(max(data$`Freq. activites mensuelles`)/5)*5, 5),
+                                col = "#5c0047", border = "white", freq = F,
                                 xlab = "Fréquence de déplacement (Jour/An)",
                                 ylab = "Fréquence", 
-                                main = "Répartition de la fréquence de déplacement après anonymisation",
-                                control_hist = list(breaks = seq(0, ceiling(max(data$`Freq. deplacements`)/5)*5, 5)))
+                                main = "Répartition de la fréquence mensuelle des activités après anonymisation",
+                                control_hist = list(breaks = seq(0, ceiling(max(data$`Freq. activites mensuelles`)/5)*5, 5)))
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```
 
 ```{r}
 # Display number of diabetes by Departement
-cross_dia_dep = data[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
-plt_original <- amBarplot("Departement", "somme", 
+cross_dia_dep = data[, .(somme = round(sum(`Risque tachycardie`)/.N*100, 2)), by = c("Pratique declaree")]
+cross_dia_dep <- cross_dia_dep[order(factor(cross_dia_dep$`Pratique declaree`, levels = c("Professionnelle", "Intensive", "Régulière", "Occasionnelle")))]
+plt_original <- amBarplot("Pratique declaree", "somme", 
           data = cross_dia_dep, stack_type = "regular",
-          horiz = T, show_values = F, main = "Pourcentage d'individus ayant contracté un cancer par département, avant anonymisation")
+          horiz = T, show_values = F, main = "Proportion d'utilisateurs associés à un risque de tachycardie par activité déclarée, avant anonymisation",
+                        fontSize = 25)
+plt_original@titles[[1]][3] <- 30
 
-cross_dia_dep = data_anonym[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
-plt_anonym <- amBarplot("Departement", "somme", 
+cross_dia_dep = data_anonym[, .(somme = round(sum(`Risque tachycardie`)/.N*100, 2)), by = c("Pratique declaree")]
+cross_dia_dep <- cross_dia_dep[order(factor(cross_dia_dep$`Pratique declaree`, levels = c("Professionnelle", "Intensive", "Régulière", "Occasionnelle")))]
+plt_anonym <- amBarplot("Pratique declaree", "somme", 
                         data = cross_dia_dep, stack_type = "regular",
-                        horiz = T, show_values = F, main = "Pourcentage d'individus ayant contracté un cancer par département, après k-anonymisation")
+                        horiz = T, show_values = F, main = "Proportion d'utilisateurs associés à un risque de tachycardie par activité déclarée, après k-anonymisation",
+                        fontSize = 25)
+plt_anonym@titles[[1]][3] <- 30
 
 combineWidgets(list = list(plot(plt_original), plot(plt_anonym)))
 ```

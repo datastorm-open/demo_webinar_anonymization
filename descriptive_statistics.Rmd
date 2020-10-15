@@ -19,6 +19,16 @@ require(rAmCharts)
 ## Import data
 source("bdd/script_bdd.R", local = FALSE, encoding = "utf-8")
 rm(list = setdiff(ls(), "data"))
+
+## Echantillonnage (intervalle de confiance à 90 % pour un taux d'échantillonnage de 10 %)
+# Pour le risque global de tachycardie
+var <- "Risque tachycardie"
+n = 50
+# (qbinom(c(0.05, 0.95), prob = mean(data[[var]]), size = round(nrow(data)*n/100)) - sum(data[[var]])*(100-n)/100)/(sum(data[[var]])*(100-n)/100)*100 # = tirage avec remise
+quantile(sapply(1:1000, function(x) (sum(data[[var]])*n/100 - sum(data[[var]][sample(1:nrow(data), size = nrow(data)*n/100)]))/(sum(data[[var]])*n/100)*100), c(0.05, 0.95))
+# Pour le risque de tachycardie chez les professionnels
+# (qbinom(c(0.05, 0.95), prob = mean(data[`Pratique declaree` == "Professionnelle"][[var]]), size = round(nrow(data[`Pratique declaree` == "Professionnelle"])*n/100)) - sum(data[`Pratique declaree` == "Professionnelle"][[var]])*(100-n)/100)/(sum(data[`Pratique declaree` == "Professionnelle"][[var]])*(100-n)/100)*100 # = tirage avec remise
+quantile(sapply(1:1000, function(x) (sum(data[`Pratique declaree` == "Professionnelle"][[var]])*n/100 - sum(data[`Pratique declaree` == "Professionnelle"][[var]][sample(1:nrow(data[`Pratique declaree` == "Professionnelle"]), size = nrow(data[`Pratique declaree` == "Professionnelle"])*n/100)]))/(sum(data[`Pratique declaree` == "Professionnelle"][[var]])*n/100)*100), c(0.05, 0.95))
 ```
 
 # Informations quasi-identifiantes
@@ -26,35 +36,29 @@ rm(list = setdiff(ls(), "data"))
 ## Répartition du personnel dans l'entreprise
 
 ```{r pole, echo=FALSE}
-data[, Departement := factor(Departement, levels = unique(Departement))]
-dt = data.table(table(data$Departement))
+data[, `Pratique declaree` := factor(`Pratique declaree`, levels = unique(`Pratique declaree`))]
+dt = data.table(table(data$`Pratique declaree`))
 colnames(dt) = c("label", "value")
 
-labels = c("Direction commerciale" = "Commerce", 
-           "Direction des opérations" = "Opérationnel", 
-           "Direction financières & RH" = "Finance & RH", 
-           "Direction R&D" = "R&D")
-dt$label = unname(labels[dt$label])
-
 amPie(dt, 
-      main=sprintf("Répartition des %s employés au sein des départements", 
+      main=sprintf("Répartition des utilisateurs par pratique déclarée", 
                    nrow(data)))
 ```
 
 
 ```{r job, echo=FALSE}
-dt = data.table(table(data$Statut))
+dt = data.table(table(data$`Activite principale`))
 colnames(dt) = c("label", "value")
 
 amPie(dt, 
-      main=sprintf("Répartition des %s employés suivant leur statut", 
+      main=sprintf("Répartition des utilisateurs par activité principale", 
                    nrow(data)))
 ```
 
 ## Etude du temps de travail et de la fréquence de déplacement
 
 ```{r time, echo=FALSE}
-df = data.frame(table(cut(data$`Volume horaire`, 
+df = data.frame(table(cut(data$`Volume horaire mensuel`, 
                           seq(floor(min(data$`Volume horaire`)/5)*5, ceiling(max(data$`Volume horaire`)/5)*5, 5), 
                           include.lowest = T, right = F)))
 
@@ -62,7 +66,7 @@ plt <- amBarplot("Var1", "Freq", df, horiz = T,
                  xlab="Volume horaire réel", 
                  ylab="Fréquence", 
                  show_values = T,
-                 main="Répartition du volume horaire moyen effectué")
+                 main="Répartition du volume horaire mensuel réalisé")
 
 plt@dataProvider <- lapply(1:nrow(df), function(x) {plt@dataProvider[[x]]$color <- colorRampPalette(c("#edd7e8", "#5c0047"))(nrow(df))[x] ; plt@dataProvider[[x]]})
 plt
@@ -70,22 +74,22 @@ plt
 
 
 ```{r move, echo=FALSE}
-rAmCharts::amHist(data$`Freq. deplacements`, breaks = seq(0, ceiling(max(data$`Freq. deplacements`)/5)*5, 5),
+rAmCharts::amHist(data$`Freq. activites mensuelles`, breaks = seq(0, ceiling(max(data$`Freq. activites mensuelles`)/5)*5, 5),
                   col = "#5c0047", border = "white",
-                  xlab="Fréquence de déplacement (Jour/An)", 
+                  xlab="Fréquence mensuelle des activités", 
                   ylab="Fréquence", 
-                  main="Répartition de la fréquence de déplacement")
+                  main="Répartition de la fréquence mensuelle des activités")
 ```
 
 
 # Informations sensibles
 
 ```{r path, echo=FALSE}
-dt = as.data.table(data[, c("Cancer", "Cirrhose", "Diabete", "Hypertension", "Immuno deficience", "Pathologie respiratoire"), with = F])
+dt = as.data.table(data[, c("Risque hypertension", "Risque tachycardie"), with = F])
 dt_counts <- data.frame(table(apply(dt, 1, sum)))
 
 plt <- amBarplot("Var1", "Freq", dt_counts,
-                 main="Répartition du nombres de comorbidité parmi les employés",
+                 main="Répartition du nombres de comorbidité parmi les utilisateurs",
                  xlab="Nombre de comorbidités",
                  ylab="Fréquence", show_values = T)
 
@@ -95,8 +99,8 @@ plt
 
 
 ```{r diap_dep, echo=FALSE}
-cross_dia_dep = data[, .(somme = round(sum(Cancer)/.N*100, 2)), by = c("Departement")]
-amBarplot("Departement", "somme", 
+cross_dia_dep = data[, .(somme = round(sum(`Risque tachycardie`)/.N*100, 2)), by = c("Pratique declaree")]
+amBarplot("Pratique declaree", "somme", 
           data = cross_dia_dep, stack_type = "regular",
-          horiz = T, show_values = T, main = "Nombre d'employés diabétiques par département")
+          horiz = T, show_values = T, main = "Proportion d'utilisateurs associés à un risque de tachycardie par activité déclarée")
 ```

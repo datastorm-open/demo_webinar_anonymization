@@ -19,6 +19,11 @@ gen_nom <- paste0(sample(unlist(mapply(rep, liste_prenoms$prenom, times = liste_
 
 gen_sexe <- sample(c("F", "H"), size = n, replace = T)
 
+age <- round(pmin(pmax(18, rnorm(n, 45, 10)), 81))
+mois <- sample(1:12, size = n, replace = T)
+max_jour <- list("1" = 31, "2" = 28, "3" = 31, "4" = 30, "5" = 31, "6" = 30, "7" = 31, "8" = 31, "9" = 30, "10" = 31, "11" = 30, "12" = 31)
+gen_date_naissance <- paste0(sapply(mois, function(x) {sample(1:max_jour[[x]], 1)}, USE.NAMES = F), "/", mois, "/", 2020 - age)
+
 gen_taille <- round(sapply(gen_sexe, function(x) {if (x == "F") {rnorm(1, 165, 6)} else {rnorm(1, 176, 6)}}, USE.NAMES = F))
 
 imcs <- c(16, 18.5, 24.9, 29.9, 39.9, 45)
@@ -26,56 +31,55 @@ imc_tranche <- sample(c("18.5", "24.9", "29.9", "39.9", "45"), size = n, replace
 imc <- sapply(imc_tranche, function(x) {runif(1, imcs[which(x == imcs) - 1], imcs[which(x == imcs)])}, USE.NAMES = F)
 gen_poids <- round(imc*(gen_taille/100)**2, 1)
 
-age <- round(pmin(pmax(18, rnorm(n, 45, 10)), 81))
-mois <- sample(1:12, size = n, replace = T)
-max_jour <- list("1" = 31, "2" = 28, "3" = 31, "4" = 30, "5" = 31, "6" = 30, "7" = 31, "8" = 31, "9" = 30, "10" = 31, "11" = 30, "12" = 31)
-gen_date_naissance <- paste0(sapply(mois, function(x) {sample(1:max_jour[[x]], 1)}, USE.NAMES = F), "/", mois, "/", 2020 - age)
+gen_total_produits <- sapply(age, function(x) {round(max(1, rnorm(1, (max(age) - 10 - x)/26, (52 - abs(30 - x))/25)))}, USE.NAMES = F)
 
-gen_enfants_charge <- sapply(age, function(x) {pmax(0, round(rnorm(1, 1-(40-40)**2/175, 1.1)))}, USE.NAMES = F)
+pratiques <- c("Professionnelle", "Intensive", "Régulière", "Occasionnelle")
+gen_pratique_declaree <- sapply(age, function(x) {sample(pratiques, size = 1, prob = c(500*abs(max(age) + 1 - x)**2/x**2, 1200*abs(max(age) + 1 - x)/x, 3*abs(min(age) - 1 - x)*x, 1/1000*abs(min(age) - 1 - x)**2*x**2))}, USE.NAMES = F)
 
-departements <- c("Direction commerciale", "Direction financières & RH", "Direction des opérations", "Direction R&D")
-gen_departement <- sample(departements, size = n, replace = T, prob = c(25, 40, 20, 15))
+activites <- c("Marche", "Course", "Cycle", "Natation")
+activites_probs <- list("Professionnelle" = c(5, 50, 35, 10), "Intensive" = c(7, 45, 35, 10), "Régulière" = c(10, 60, 20, 10), "Occasionnelle" = c(40, 40, 15, 5))
+gen_activite_principale <- sapply(gen_pratique_declaree, function(x, y) {sample(activites, size = 1, prob = activites_probs[[x]])}, USE.NAMES = F)
 
-statuts <- c("Cadre", "Directeur", "Stagiaire/alternant", "Technicien")
-statuts_probs <- list("Direction commerciale" = c(50, 20, 15, 15), "Direction des opérations" = c(40, 10, 20, 30), "Direction R&D" = c(45, 20, 15, 20), "Direction financières & RH" = c(40, 10, 25, 25))
-gen_statut <- mapply(function(x, y) {sample(c("Cadre", "Directeur", "Stagiaire/alternant", "Technicien"), size = 1, prob = statuts_probs[[x]]*c(max(age)**3, y**3, max(age)**3/(1 + (y>30)*y**1.5), max(age)**3))}, USE.NAMES = F, gen_departement, age)
+activites_mensuelle_freq_pratique <- list("Professionnelle" = 10, "Intensive" = 6, "Régulière" = 3, "Occasionnelle" = 1)
+gen_freq_activites_mensuelles <- pmin(pmax(round(sapply(gen_pratique_declaree, function(x) {rnorm(1, activites_mensuelle_freq_pratique[[x]]*3, activites_mensuelle_freq_pratique[[x]]/2)}, USE.NAMES = F)), 1), 50)
+gen_freq_activites_mensuelles_cut <- cut(gen_freq_activites_mensuelles, breaks = seq(0, ceiling(max(gen_freq_activites_mensuelles)/5)*5, 5), include.lowest = T, right = F,
+                                labels = paste0("[", seq(0, ceiling(max(gen_freq_activites_mensuelles)/5)*5, 5)[- length(seq(0, ceiling(max(gen_freq_activites_mensuelles)/5)*5, 5))], "-", seq(0, ceiling(max(gen_freq_activites_mensuelles)/5)*5, 5)[-1]-1, "]"))
 
-deplacement_freq_departement <- list("Direction commerciale" = 10, "Direction financières & RH" = 3, "Direction des opérations" = 5, "Direction R&D" = 6)
-deplacement_freq_status <- list("Cadre" = 7, "Directeur" = 10, "Stagiaire/alternant" = 1, "Technicien" = 2)
-gen_freq_deplacement <- round(abs(unlist(mapply(function(x, y) {rnorm(1, ((deplacement_freq_departement[[x]]*deplacement_freq_status[[y]])**2)/200, deplacement_freq_departement[[x]]*deplacement_freq_status[[y]]/20)}, gen_departement, gen_statut, USE.NAMES = F))))
-gen_freq_deplacement_cut <- cut(gen_freq_deplacement, breaks = seq(0, ceiling(max(gen_freq_deplacement)/5)*5, 5), include.lowest = T, right = F,
-                                labels = paste0("[", seq(0, ceiling(max(gen_freq_deplacement)/5)*5, 5)[- length(seq(0, ceiling(max(gen_freq_deplacement)/5)*5, 5))], "-", seq(0, ceiling(max(gen_freq_deplacement)/5)*5, 5)[-1]-1, "]"))
+volume_activites <- list("Marche" = 1, "Course" = 1.5, "Cycle" = 2.3, "Natation" = 1.9)
+gen_volume_horaire_mensuel <- round(unlist(mapply(function(x, y) {rnorm(1, volume_activites[[x]]*y, sqrt(volume_activites[[x]]*y))}, gen_activite_principale, gen_freq_activites_mensuelles, USE.NAMES = F))/5)*5
 
-volume_status <- list("Cadre" = 40, "Directeur" = 45, "Stagiaire/alternant" = 35, "Technicien" = 35)
-gen_volume_horaire <- round(sapply(gen_statut, function(x) {rnorm(1, volume_status[[x]], (volume_status[[x]] - 32)/2)}, USE.NAMES = F)/5)*5
+profil_public_pratique <- list("Professionnelle" = 80, "Intensive" = 60, "Régulière" = 25, "Occasionnelle" = 10)
+gen_profil_public <- sapply(gen_pratique_declaree, function(x) sample(c(T, F), size = 1, prob = c(profil_public_pratique[[x]], 100 - profil_public_pratique[[x]])), USE.NAMES = F)
 
-eligibilite_departement <- list("Direction commerciale" = 5, "Direction financières & RH" = 8, "Direction des opérations" = 5, "Direction R&D" = 10)
-eligibilite_status <- list("Cadre" = 8, "Directeur" = 5, "Stagiaire/alternant" = 4, "Technicien" = 2)
-gen_eligibilite_teletravail <- c(T, F)[round(abs(unlist(mapply(function(x, y) {round((eligibilite_departement[[x]]/10 + eligibilite_status[[y]]/10 + runif(1, 0, 1))/3)}, gen_departement, gen_statut, USE.NAMES = F)))) + 1]
+risque_tachycardie_pratique <- list("Professionnelle" = 100, "Intensive" = 70, "Régulière" = 20, "Occasionnelle" = 10)
+gen_risque_tachycardie <- mapply(function(x, y) {sample(c(T, F), size = 1, replace = T, prob = c(x/2-17 + risque_tachycardie_pratique[[y]], 500))}, age, gen_pratique_declaree, USE.NAMES = F)
+gen_risque_hypertension <- sample(c(T, F), size = n, replace = T, prob = c(1, 3))
 
-gen_pathologie_resp <- sapply(age, function(x) {if (x < 40) {sample(c(T, F), size = 1, replace = T, prob = c(1, 49*10))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 49*9/10))}}, USE.NAMES = F)
-gen_cancer <- mapply(function(x, y) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(2*y**2, 6*mean(age)**2))} else {sample(c(T, F), size = 1, replace = T, prob = c(2*y**2, 59*mean(age)**2))}}, USE.NAMES = F, gen_pathologie_resp, age)
-gen_cirrhose <- sapply(age, function(x) {if (x < 40) {sample(c(T, F), size = 1, replace = T, prob = c(1, 330*10))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 330*9/10))}}, USE.NAMES = F)
-gen_diabete <- sapply(imc, function(x) {sample(c(T, F), size = 1, prob = c(1+(x > 25)*(1 + x-25)**3, 19))}, USE.NAMES = F)
-gen_hypertension <- sapply(gen_diabete, function(x) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(2, 1))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 20))}}, USE.NAMES = F)
-gen_immunodeficience <- sapply(gen_cancer, function(x) {if (x) {sample(c(T, F), size = 1, replace = T, prob = c(1, 3))} else {sample(c(T, F), size = 1, replace = T, prob = c(1, 460))}}, USE.NAMES = F)
+strava_pratique <- list("Professionnelle" = 70, "Intensive" = 75, "Régulière" = 10, "Occasionnelle" = 5)
+gen_strava <- sapply(gen_pratique_declaree, function(x) sample(c(T, F), size = 1, prob = c(strava_pratique[[x]], 100 - strava_pratique[[x]])), USE.NAMES = F)
+twitter_pratique <- list("Professionnelle" = 85, "Intensive" = 50, "Régulière" = 5, "Occasionnelle" = 1)
+gen_twitter <- sapply(gen_pratique_declaree, function(x) sample(c(T, F), size = 1, prob = c(twitter_pratique[[x]], 100 - twitter_pratique[[x]])), USE.NAMES = F)
+facebook_pratique <- list("Professionnelle" = 95, "Intensive" = 90, "Régulière" = 5, "Occasionnelle" = 1)
+gen_facebook <- sapply(gen_pratique_declaree, function(x) sample(c(T, F), size = 1, prob = c(facebook_pratique[[x]], 100 - facebook_pratique[[x]])), USE.NAMES = F)
+
+optin_pratique <- list("Professionnelle" = 99, "Intensive" = 90, "Régulière" = 66, "Occasionnelle" = 33)
+gen_opt_in <- sapply(gen_pratique_declaree, function(x) sample(c(T, F), size = 1, prob = c(optin_pratique[[x]], 100 - optin_pratique[[x]])), USE.NAMES = F)
 
 data <- data.table("Nom" = gen_nom,
                    "Sexe" = gen_sexe,
                    "Date de naissance" = gen_date_naissance,
                    "Taille" = gen_taille,
                    "Poids" = gen_poids,
-                   "Enfants a charge" = gen_enfants_charge,
-                   "Departement" = gen_departement,
-                   "Statut" =  gen_statut,
-                   "Freq. deplacements" = gen_freq_deplacement,
-                   "Volume horaire" = gen_volume_horaire,
-                   "Eligibilite teletavail" = gen_eligibilite_teletravail,
-                   "Cancer" = gen_cancer,
-                   "Cirrhose" = gen_cirrhose,
-                   "Diabete" = gen_diabete,
-                   "Hypertension" = gen_hypertension,
-                   "Immuno deficience" = gen_immunodeficience,
-                   "Pathologie respiratoire" = gen_pathologie_resp,
-                   "freq. depl. cut" = gen_freq_deplacement_cut,
-                   "poids cut" = round(gen_poids))
+                   "Total produits" = gen_total_produits,
+                   "Pratique declaree" = gen_pratique_declaree,
+                   "Activite principale" =  gen_activite_principale,
+                   "Freq. activites mensuelles" = gen_freq_activites_mensuelles,
+                   "Volume horaire mensuel" = gen_volume_horaire_mensuel,
+                   "Profil public" = gen_profil_public,
+                   "Risque tachycardie" = gen_risque_tachycardie,
+                   "Risque hypertension" = gen_risque_hypertension,
+                   "Strava" = gen_strava,
+                   "Twitter" = gen_twitter,
+                   "Facebook" = gen_facebook,
+                   "Opt_in" = gen_opt_in,
+                   "freq. activites mensuelles cut" = gen_freq_activites_mensuelles_cut)
